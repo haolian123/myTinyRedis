@@ -99,7 +99,8 @@ void RedisServer::start() {
                     }
                     setFdNoBlock(newSocket); // 设置新socket为非阻塞模式
                     // 为每个客户端连接创建一个新线程来处理请求
-                    std::thread(&RedisServer::handleClient, this, newSocket).detach();
+                    // std::thread(&RedisServer::handleClient, this, newSocket).detach();
+                    threadPool->addTask(std::bind(&RedisServer::handleClient, this, newSocket));
                 }
             }
         }
@@ -111,7 +112,7 @@ void RedisServer::handleClient(int clientSocket) {
     ParserFlyweightFactory flyweightFactory;
 
     // 持续监听来自客户端的请求
-    while (!stop) { // 假设stop是一个能够控制服务器停止的全局变量
+    while (!stop) { 
         char buffer[2048];
         std::string receivedData;
         ssize_t bytesRead;
@@ -129,11 +130,17 @@ void RedisServer::handleClient(int clientSocket) {
             while (iss >> command) {
                 tokens.push_back(command);
             }
-
+            
             if (!tokens.empty()) {
                 command = tokens.front();
-                std::shared_ptr<CommandParser> commandParser = flyweightFactory.getParser(command);
                 std::string responseMessage;
+                if(command=="quit"||command=="exit"){
+                    responseMessage="stop";
+                    send(clientSocket, responseMessage.c_str(), responseMessage.length(), 0);
+                    break;
+                }
+                std::shared_ptr<CommandParser> commandParser = flyweightFactory.getParser(command);
+                
 
                 if (commandParser == nullptr) {
                     responseMessage = "Error: Command '" + command + "' not recognized.";
@@ -156,7 +163,7 @@ void RedisServer::handleClient(int clientSocket) {
             break;
         }
     }
-
+    epollManager->deleteFd(clientSocket);
     close(clientSocket); // 客户端断开连接或发生错误后关闭socket
 }
 
@@ -197,6 +204,6 @@ int RedisServer::setFdNoBlock(int fd){
 }
 
 RedisServer::RedisServer(int port, const std::string& logoFilePath) 
-: port(port), logoFilePath(logoFilePath),epollManager(new EpollManager()){
+: port(port), logoFilePath(logoFilePath),threadPool(new ThreadPool()),epollManager(new EpollManager()){
     pid = getpid();
 }

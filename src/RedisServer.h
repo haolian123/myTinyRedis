@@ -25,6 +25,7 @@
 #include <cstring> 
 #include "ParserFlyweightFactory.h"
 #include "EpollManager.h"
+#include "ThreadPool.h"
 class RedisServer {
 private:
     int serverSocket, newSocket;
@@ -36,6 +37,7 @@ private:
     std::string logoFilePath;
 
     std::unique_ptr<EpollManager> epollManager; // epoll 管理器
+    std::unique_ptr<ThreadPool> threadPool; // epoll 管理器
     uint32_t listenEvent=EPOLLET;   // 监听事件类型
 
 private:

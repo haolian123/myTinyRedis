@@ -57,75 +57,110 @@ void RedisServer::printStartMessage() {
 }
 
 void RedisServer::start() {
-    signal(SIGINT, signalHandler); // Set signal handler for SIGINT
+    signal(SIGINT, signalHandler);
     createSocket();
     initServer();
     if (!bindSocket()) {
         return;
     }
 
-    listen(serverSocket, 3); // Start listening for connections
+    if (listen(serverSocket, 3) < 0) {
+        std::cerr << "Listen failed" << std::endl;
+        return;
+    }
+    setFdNoBlock(serverSocket); // 设置监听socket为非阻塞模式
+
+    if (!epollManager->addFd(serverSocket, EPOLLIN | EPOLLET)) { // 添加监听socket到epoll，注意使用边缘触发模式
+        std::cerr << "Add listen socket to epoll failed" << std::endl;
+        return;
+    }
 
     printLogo();
     printStartMessage();
 
     while (!stop) {
-        c = sizeof(struct sockaddr_in);
-        newSocket = accept(serverSocket, (struct sockaddr *)&client, &c);
-        if (newSocket < 0) {
-            std::cerr << "Accept failed" << std::endl;
-            continue;
+        int eventCount = epollManager->wait(-1); // 无限期等待事件
+        for (int i = 0; i < eventCount; ++i) {
+            int fd = epollManager->getEventFd(i);
+            if (fd == serverSocket) {
+                // 处理新的连接
+                while (true) {
+                    struct sockaddr_in client;
+                    socklen_t clientLen = sizeof(client);
+                    int newSocket = accept(serverSocket, (struct sockaddr*)&client, &clientLen);
+                    if (newSocket < 0) {
+                        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                            // 没有更多的连接可以接受
+                            break;
+                        } else {
+                            std::cerr << "Accept failed" << std::endl;
+                            continue;
+                        }
+                    }
+                    setFdNoBlock(newSocket); // 设置新socket为非阻塞模式
+                    // 为每个客户端连接创建一个新线程来处理请求
+                    std::thread(&RedisServer::handleClient, this, newSocket).detach();
+                }
+            }
         }
-
-        std::thread(&RedisServer::handleClient, this, newSocket).detach();
     }
 }
+
 
 void RedisServer::handleClient(int clientSocket) {
     ParserFlyweightFactory flyweightFactory;
-    char buffer[2048];
-    std::string receivedData;
-    ssize_t bytesRead;
 
-    while ((bytesRead = recv(clientSocket, buffer, sizeof(buffer) - 1, 0)) > 0) {
-        buffer[bytesRead] = '\0'; 
-        receivedData.assign(buffer, bytesRead);
+    // 持续监听来自客户端的请求
+    while (!stop) { // 假设stop是一个能够控制服务器停止的全局变量
+        char buffer[2048];
+        std::string receivedData;
+        ssize_t bytesRead;
 
-        // 假定接收的数据是命令行格式，用空格分隔命令和参数
-        std::istringstream iss(receivedData);
-        std::string command;
-        std::vector<std::string> tokens;
-        while (iss >> command) {
-            tokens.push_back(command);
-        }
+        // 非阻塞接收数据
+        bytesRead = recv(clientSocket, buffer, sizeof(buffer) - 1, 0);
+        
+        if (bytesRead > 0) {
+            buffer[bytesRead] = '\0';
+            receivedData.assign(buffer, bytesRead);
 
-        // 假定第一个token是命令，其余的是参数
-        if (!tokens.empty()) {
-            command = tokens.front();
-
-            std::shared_ptr<CommandParser> commandParser = flyweightFactory.getParser(command);
-            std::string responseMessage;
-
-            if (commandParser == nullptr) {
-                responseMessage = "Error: Command '" + command + "' not recognized.";
-            } else {
-                try {
-                    responseMessage = commandParser->parse(tokens);
-                } catch (const std::exception& e) {
-                    responseMessage = "Error processing command '" + command + "': " + e.what();
-                }
+            std::istringstream iss(receivedData);
+            std::string command;
+            std::vector<std::string> tokens;
+            while (iss >> command) {
+                tokens.push_back(command);
             }
 
-            // 发送响应消息回客户端
-            send(clientSocket, responseMessage.c_str(), responseMessage.length(), 0);
+            if (!tokens.empty()) {
+                command = tokens.front();
+                std::shared_ptr<CommandParser> commandParser = flyweightFactory.getParser(command);
+                std::string responseMessage;
+
+                if (commandParser == nullptr) {
+                    responseMessage = "Error: Command '" + command + "' not recognized.";
+                } else {
+                    try {
+                        responseMessage = commandParser->parse(tokens);
+                    } catch (const std::exception& e) {
+                        responseMessage = "Error processing command '" + command + "': " + e.what();
+                    }
+                }
+
+                // 发送响应消息回客户端
+                send(clientSocket, responseMessage.c_str(), responseMessage.length(), 0);
+            }
+        } else if (bytesRead == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+            // 在非阻塞模式下，没有数据可读时继续循环
+            continue;
         } else {
-            std::string errorMessage = "Error: No command received.";
-            send(clientSocket, errorMessage.c_str(), errorMessage.length(), 0);
+            // 客户端断开连接或发生错误
+            break;
         }
     }
 
-    close(clientSocket);
+    close(clientSocket); // 客户端断开连接或发生错误后关闭socket
 }
+
+
 
 
 void RedisServer::replaceText(std::string &text, const std::string &toReplaceText, const std::string &newText) {
@@ -155,3 +190,13 @@ void RedisServer::signalHandler(int sig) {
     }
 }
 
+
+int RedisServer::setFdNoBlock(int fd){
+    assert(fd > 0);
+    return fcntl(fd, F_SETFL, fcntl(fd, F_GETFD, 0) | O_NONBLOCK);
+}
+
+RedisServer::RedisServer(int port, const std::string& logoFilePath) 
+: port(port), logoFilePath(logoFilePath),epollManager(new EpollManager()){
+    pid = getpid();
+}

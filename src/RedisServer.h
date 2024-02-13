@@ -20,9 +20,11 @@
 #include <chrono>
 #include <ctime>
 #include <signal.h>
+#include<sys/epoll.h>
+#include<fcntl.h>
 #include <cstring> 
 #include "ParserFlyweightFactory.h"
-
+#include "EpollManager.h"
 class RedisServer {
 private:
     int serverSocket, newSocket;
@@ -33,9 +35,11 @@ private:
     pid_t pid;
     std::string logoFilePath;
 
-    RedisServer(int port = 8888, std::string logoFilePath = "logo") : port(port), logoFilePath(logoFilePath) {
-        pid = getpid();
-    }
+    std::unique_ptr<EpollManager> epollManager; // epoll 管理器
+    uint32_t listenEvent=EPOLLET;   // 监听事件类型
+
+private:
+    RedisServer(int port = 8888, const std::string& logoFilePath = "logo");
 
     void handleClient(int clientSocket);
     static void signalHandler(int sig);
@@ -46,6 +50,7 @@ private:
     void printStartMessage();
     void replaceText(std::string &text, const std::string &toReplaceText, const std::string &replaceText);
     std::string getDate();
+    int setFdNoBlock(int fd);
 
 public:
     static std::shared_ptr<RedisServer> getInstance();

@@ -11,7 +11,7 @@ BIN_DIR=../bin
 $(shell mkdir -p $(BIN_DIR))
 
 # 定义对象文件列表
-OBJS=$(SRC_DIR)/RedisHelper.cpp $(SRC_DIR)/CommandParser.cpp $(SRC_DIR)/RedisServer.cpp $(SRC_DIR)/RedisClient.cpp $(SRC_DIR)/ParserFlyweightFactory.cpp
+OBJS=$(SRC_DIR)/RedisHelper.cpp $(SRC_DIR)/EpollManager.cpp $(SRC_DIR)/CommandParser.cpp $(SRC_DIR)/RedisServer.cpp $(SRC_DIR)/RedisClient.cpp $(SRC_DIR)/ParserFlyweightFactory.cpp
 
 # 默认目标
 all: server client

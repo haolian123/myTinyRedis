@@ -40,6 +40,9 @@ void RedisClient::start(){
 
         //添加结束字符
         serverMessage[recvSize] = '\0';
+        if(!std::strcmp(serverMessage,"stop")){
+            break;
+        }
         std::cout << serverMessage << std::endl;
     }
 

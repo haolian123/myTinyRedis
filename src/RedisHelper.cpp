@@ -1,8 +1,7 @@
 #include"RedisHelper.h"
 #include"FileCreator.h"
-// const std::string RedisHelper::DEFAULT_DB_FOLDER = "data_files";
-// const std::string RedisHelper::DATABASE_FILE_NAME = "db";
-// const int RedisHelper::DATABASE_FILE_NUMBER = 15;
+
+
 void RedisHelper::flush(){
     // 打开文件并覆盖写入
     std::string filePath=getFilePath();

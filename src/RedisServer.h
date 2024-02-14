@@ -28,6 +28,7 @@
 #include "ThreadPool.h"
 class RedisServer {
 private:
+    std::unique_ptr<ParserFlyweightFactory> flyweightFactory;
     int serverSocket, newSocket;
     struct sockaddr_in server, client;
     socklen_t c;
@@ -53,7 +54,7 @@ private:
     void replaceText(std::string &text, const std::string &toReplaceText, const std::string &replaceText);
     std::string getDate();
     int setFdNoBlock(int fd);
-
+    void executeTransaction(std::queue<std::string>&commandsQueue,int clientSocket);
 public:
     static std::shared_ptr<RedisServer> getInstance();
     void start();

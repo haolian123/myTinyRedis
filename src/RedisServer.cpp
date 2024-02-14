@@ -107,10 +107,75 @@ void RedisServer::start() {
     }
 }
 
+void handleMulti(){
+    
+
+}
+void RedisServer::executeTransaction(std::queue<std::string>&commandsQueue,int clientSocket){
+    //存储所有的执行结果
+    std::vector<std::string>responseMessagesList;
+    while(!commandsQueue.empty()){
+        std::string receivedData = std::move(commandsQueue.front());
+        commandsQueue.pop();
+        std::istringstream iss(receivedData);
+        std::string command;
+        std::vector<std::string> tokens;
+        std::string responseMessage;
+
+        
+        while (iss >> command) {
+            tokens.push_back(command);
+        }
+        command = tokens.front();
+        if (!tokens.empty()) {
+            command = tokens.front();
+            std::string responseMessage;
+            if(command=="quit"||command=="exit"){
+                responseMessage="stop";
+                send(clientSocket, responseMessage.c_str(), responseMessage.length(), 0);
+                break;
+            }else if(command=="multi"){
+                responseMessage="Open the transaction repeatedly!";
+                send(clientSocket, responseMessage.c_str(), responseMessage.length(), 0);
+                continue;
+            }else if(command == "exec"){
+                //处理未打开事物就执行的操作
+                responseMessage="No transaction is opened!";
+                send(clientSocket, responseMessage.c_str(), responseMessage.length(), 0);
+                continue;
+            }else{
+                //处理常规指令
+                
+                std::shared_ptr<CommandParser> commandParser = flyweightFactory->getParser(command);
+                
+                try {
+                    responseMessage = commandParser->parse(tokens);
+                } catch (const std::exception& e) {
+                    responseMessage = "Error processing command '" + command + "': " + e.what();
+                }   
+                responseMessagesList.emplace_back(responseMessage);
+            }
+                    
+        }
+                
+    }
+    for(int i=0;i<responseMessagesList.size();i++){
+        
+        std::string responseMessage = std::to_string(i+1)+")"+responseMessagesList[i];
+        if(i!=responseMessagesList.size()-1){
+            responseMessage+="\n";
+        }
+        send(clientSocket, responseMessage.c_str(), responseMessage.length(), 0);
+    }
+}
+    
 
 void RedisServer::handleClient(int clientSocket) {
-    ParserFlyweightFactory flyweightFactory;
-
+    
+    std::queue<std::string>commandsQueue;//事物指令队列
+    //是否打开了事务
+    bool startMulti=false;
+    bool fallback = false;
     // 持续监听来自客户端的请求
     while (!stop) { 
         char buffer[2048];
@@ -138,22 +203,73 @@ void RedisServer::handleClient(int clientSocket) {
                     responseMessage="stop";
                     send(clientSocket, responseMessage.c_str(), responseMessage.length(), 0);
                     break;
-                }
-                std::shared_ptr<CommandParser> commandParser = flyweightFactory.getParser(command);
-                
-
-                if (commandParser == nullptr) {
-                    responseMessage = "Error: Command '" + command + "' not recognized.";
-                } else {
-                    try {
-                        responseMessage = commandParser->parse(tokens);
-                    } catch (const std::exception& e) {
-                        responseMessage = "Error processing command '" + command + "': " + e.what();
+                }else if(command=="multi"){
+                    if(startMulti){
+                        responseMessage="Open the transaction repeatedly!";
+                        send(clientSocket, responseMessage.c_str(), responseMessage.length(), 0);
+                        continue;
                     }
-                }
+                    startMulti = true;
+                    std::queue<std::string> empty;
+                    std::swap(empty, commandsQueue);
+                    responseMessage = "OK";
+                    send(clientSocket, responseMessage.c_str(), responseMessage.length(), 0);
+                }else if(command == "exec"){
+                    if(startMulti==false){
+                        //处理未打开事物就执行的操作
+                        responseMessage="No transaction is opened!";
+                        send(clientSocket, responseMessage.c_str(), responseMessage.length(), 0);
+                        continue;
+                    }
+                    startMulti = false;
+                    if(!fallback){
+                        //执行事物
+                        executeTransaction(commandsQueue,clientSocket);
+                    }else{
+                        fallback=false;
+                        responseMessage = "(error) EXECABORT Transaction discarded because of previous errors.";
+                        send(clientSocket, responseMessage.c_str(), responseMessage.length(), 0);
+                    }
+                }else if(command == "discard"){
+                    startMulti = false;
+                    fallback=false;
+                    responseMessage = "OK";
+                    send(clientSocket, responseMessage.c_str(), responseMessage.length(), 0);
+                }else{
+                    //处理常规指令
+                    if(!startMulti){
+                        std::shared_ptr<CommandParser> commandParser = flyweightFactory->getParser(command);
+                        if (commandParser == nullptr) {
+                            responseMessage = "Error: Command '" + command + "' not recognized.";
+                        } else {
+                            try {
+                                responseMessage = commandParser->parse(tokens);
+                            } catch (const std::exception& e) {
+                                responseMessage = "Error processing command '" + command + "': " + e.what();
+                            }
+                        }
 
-                // 发送响应消息回客户端
-                send(clientSocket, responseMessage.c_str(), responseMessage.length(), 0);
+                        // 发送响应消息回客户端
+                        send(clientSocket, responseMessage.c_str(), responseMessage.length(), 0);
+                    }else{
+                        //添加到事物队列中
+                        std::shared_ptr<CommandParser> commandParser = flyweightFactory->getParser(command);
+                        if (commandParser == nullptr) {
+                            //编译错误,需要回退，后续增加回退功能
+                            fallback = true;
+                            responseMessage = "Error: Command '" + command + "' not recognized.";
+                            send(clientSocket, responseMessage.c_str(), responseMessage.length(), 0);
+                        }else{
+                            //加入到队列
+                            commandsQueue.emplace(receivedData);
+                            responseMessage = "QUEUED";
+                            send(clientSocket, responseMessage.c_str(), responseMessage.length(), 0);
+                        }
+                        
+                    }
+                    
+                }
+                
             }
         } else if (bytesRead == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
             // 在非阻塞模式下，没有数据可读时继续循环
@@ -204,6 +320,7 @@ int RedisServer::setFdNoBlock(int fd){
 }
 
 RedisServer::RedisServer(int port, const std::string& logoFilePath) 
-: port(port), logoFilePath(logoFilePath),threadPool(new ThreadPool()),epollManager(new EpollManager()){
+: port(port), logoFilePath(logoFilePath),
+threadPool(new ThreadPool()),epollManager(new EpollManager()),flyweightFactory(new ParserFlyweightFactory()){
     pid = getpid();
 }

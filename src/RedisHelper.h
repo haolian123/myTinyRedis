@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include "SkipList.h" 
+#include "RedisValue/RedisValue.h"
 #define DEFAULT_DB_FOLDER "data_files"
 #define DATABASE_FILE_NAME "db"
 #define DATABASE_FILE_NUMBER 15
@@ -14,7 +15,7 @@ private:
     // static const std::string DATABASE_FILE_NAME;
     // static const int DATABASE_FILE_NUMBER;
     std::string dataBaseIndex="0";
-    std::shared_ptr<SkipList<std::string, std::string>> redisDataBase = std::make_shared<SkipList<std::string, std::string>>();
+    std::shared_ptr<SkipList<std::string, RedisValue>> redisDataBase = std::make_shared<SkipList<std::string, RedisValue>>();
 public:
     RedisHelper();
     ~RedisHelper();
@@ -44,11 +45,11 @@ public:
     std::string rename(const std::string&oldName,const std::string&newName);
 
     // 字符串操作命令
-    std::string set(const std::string& key, const std::string& value,const SET_MODEL model=NONE);
+    std::string set(const std::string& key, const RedisValue& value,const SET_MODEL model=NONE);
 
-    std::string setnx(const std::string& key, const std::string& value);
+    std::string setnx(const std::string& key, const RedisValue& value);
 
-    std::string setex(const std::string& key, const std::string& value);
+    std::string setex(const std::string& key, const RedisValue& value);
 
     // 获取键值
     std::string get(const std::string&key);

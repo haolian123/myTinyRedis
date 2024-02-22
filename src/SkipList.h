@@ -9,6 +9,7 @@
 #include<fstream>
 #include<mutex>
 #include"global.h"
+#include"RedisValue/RedisValue.h"
 #define MAX_SKIP_LIST_LEVEL 32
 #define  PROBABILITY_FACTOR 0.25
 #define  DELIMITER ":"
@@ -170,7 +171,7 @@ void SkipList<Key,Value>::dumpFile( std::string save_path){
     writeFile.open(save_path);
     auto node=this->head->forward[0];
     while(node!=nullptr){
-        writeFile<<node->key<<DELIMITER<<node->value<<"\n";
+        writeFile<<node->key<<DELIMITER<<node->value.dump()<<"\n";
         node=node->forward[0];
     }
     writeFile.flush();
@@ -191,9 +192,10 @@ void SkipList<Key,Value>::loadFile(std::string load_path){
     std::string line;
     std::string key;
     std::string value;
+    std::string err;
     while(std::getline(readFile,line)){
         if(parseString(line,key,value)){
-            addItem(key,value);
+            addItem(key,RedisValue::parse(value,err));
         }
     }
     readFile.close();

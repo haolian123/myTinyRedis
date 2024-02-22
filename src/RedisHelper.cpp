@@ -14,9 +14,9 @@ void RedisHelper::flush(){
     auto currentNode=redisDataBase->getHead();
     while(currentNode!=nullptr){
         std::string key=currentNode->key;
-        std::string value=currentNode->value;
-        if(!key.empty()&&!value.empty())
-            outputFile<<key<<":"<<value<<std::endl;
+        RedisValue value=currentNode->value;
+        if(!key.empty())
+            outputFile<<key<<":"<<value.dump()<<std::endl;
         currentNode=currentNode->forward[0];
     }
     // 关闭文件
@@ -41,7 +41,7 @@ std::string RedisHelper::select(int index){
         return "database index out of range.";
     }
     flush();
-    redisDataBase=std::make_shared<SkipList<std::string, std::string>>();
+    redisDataBase=std::make_shared<SkipList<std::string, RedisValue>>();
     dataBaseIndex=std::to_string(index);
     std::string filePath=getFilePath();
 
@@ -129,7 +129,8 @@ std::string RedisHelper::rename(const std::string&oldName,const std::string&newN
 // 存放键值
 // 语法：set key value [EX seconds] [PX milliseconds] [NX|XX]
 // nx：如果key不存在则建立，xx：如果key存在则修改其值，也可以直接使用setnx/setex命令。
-std::string RedisHelper::set(const std::string& key, const std::string& value,const SET_MODEL model){
+std::string RedisHelper::set(const std::string& key, const RedisValue& value,const SET_MODEL model){
+    
     if(model==XX){
         return setex(key,value);
     }else if(model==NX){
@@ -146,7 +147,7 @@ std::string RedisHelper::set(const std::string& key, const std::string& value,co
     return "OK";
 }
 
-std::string RedisHelper::setnx(const std::string& key, const std::string& value){
+std::string RedisHelper::setnx(const std::string& key, const RedisValue& value){
     auto currentNode=redisDataBase->searchItem(key);
     if(currentNode!=nullptr){
         return "key: "+ key +"  exists!";
@@ -156,7 +157,7 @@ std::string RedisHelper::setnx(const std::string& key, const std::string& value)
     }
     return "OK";
 }
-std::string RedisHelper::setex(const std::string& key, const std::string& value){
+std::string RedisHelper::setex(const std::string& key, const RedisValue& value){
     auto currentNode=redisDataBase->searchItem(key);
     if(currentNode==nullptr){
         return "key: "+ key +" does not exist!";
@@ -176,7 +177,7 @@ std::string RedisHelper::get(const std::string&key){
     if(currentNode==nullptr){
         return "key: "+ key +" does not exist!";
     }
-    return currentNode->value;
+    return currentNode->value.dump();
 
 }
 // 值递增/递减
@@ -197,14 +198,17 @@ std::string RedisHelper::incrby(const std::string& key,int increment){
         redisDataBase->addItem(key,value);
         return "(integer) "+value;
     }
-    value=currentNode->value;
+    value=currentNode->value.dump();
+    //去掉双引号
+    value.erase(0, 1); 
+    value.erase(value.size()-1);
     for(char ch:value){
         if(!isdigit(ch)){
             std::string res="The value of "+key +" is not a numeric type";
             return res;
         }
     }
-    int curValue=std::stoi(currentNode->value)+increment;
+    int curValue=std::stoi(value)+increment;
     value=std::to_string(curValue);
     currentNode->value=value;
     std::string res="(integer) "+value;
@@ -218,10 +222,12 @@ std::string RedisHelper::incrbyfloat(const std::string&key,double increment){
         redisDataBase->addItem(key,value);
         return "(float) "+value;
     }
-    value=currentNode->value;
+    value=currentNode->value.dump();
+    value.erase(0, 1); 
+    value.erase(value.size()-1);
     double curValue=0.0;
     try {
-            curValue = std::stod(value)+increment;
+        curValue = std::stod(value)+increment;
     } catch (std::invalid_argument const &e) {
         return "The value of "+key +" is not a numeric type";
     } 
@@ -273,8 +279,8 @@ std::string RedisHelper::mget(std::vector<std::string>&keys){
             value="(nil)";
             res+=std::to_string(i+1)+") "+value+"\n";
         }else{
-            value=currentNode->value;
-            res+=std::to_string(i+1)+") "+"\""+value+"\""+"\n";
+            value=currentNode->value.dump();
+            res+=std::to_string(i+1)+") "+value+"\n";
         }
         
     }
@@ -289,7 +295,7 @@ std::string RedisHelper::strlen(const std::string& key){
     if(currentNode==nullptr){
         return "(integer) 0";
     }
-    return "(integer) "+std::to_string(currentNode->value.size());
+    return "(integer) "+std::to_string(currentNode->value.dump().size());
 }
 // 追加内容
 // 语法：append key value
@@ -302,8 +308,8 @@ std::string RedisHelper::append(const std::string&key,const std::string &value){
         redisDataBase->addItem(key,value);
         return "(integer) "+std::to_string(value.size());
     }
-    currentNode->value=currentNode->value+value;
-    return "(integer) "+std::to_string(currentNode->value.size());
+    currentNode->value=currentNode->value.dump()+value;
+    return "(integer) "+std::to_string(currentNode->value.dump().size());
 }
 
 

@@ -76,7 +76,13 @@ public:
 
     // 追加内容
     std::string append(const std::string&key,const std::string &value);
-   
+    
+    //列表操作
+    std::string lpush(const std::string&key,const std::string &value);
+    std::string rpush(const std::string&key,const std::string &value);
+    std::string lpop(const std::string&key);
+    std::string rpop(const std::string&key);
+    std::string lrange(const std::string&key,const std::string &start,const std::string&end);
 };
 
 #endif

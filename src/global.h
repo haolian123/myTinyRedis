@@ -28,6 +28,11 @@ enum Command{
     STRLEN,
     APPEND,
     KEYS,
+    LPUSH,
+    RPUSH,
+    LPOP,
+    RPOP,
+    LRANGE,
     INVALID_COMMAND
 };
 
@@ -51,6 +56,11 @@ static std::unordered_map<std::string,enum Command>commandMaps={
     {"strlen",STRLEN},
     {"append",APPEND},
     {"keys",KEYS},
+    {"lpush",LPUSH},
+    {"rpush",RPUSH},
+    {"lpop",LPOP},
+    {"rpop",RPOP},
+    {"lrange",LRANGE}
     
 };
 

@@ -183,3 +183,43 @@ std::string AppendParser::parse(std::vector<std::string>& tokens) {
     }
     return redisHelper->append(tokens[1], tokens[2]);
 }
+
+
+std::string LPushParser::parse(std::vector<std::string>& tokens) {
+    if (tokens.size() < 3) {
+        return "wrong number of arguments for LPUSH.";
+    }
+    return redisHelper->lpush(tokens[1],tokens[2]);
+}
+std::string RPushParser::parse(std::vector<std::string>& tokens) {
+    if (tokens.size() < 3) {
+        return "wrong number of arguments for RPUSH.";
+    }
+    return redisHelper->rpush(tokens[1],tokens[2]);
+}
+std::string LPopParser::parse(std::vector<std::string>& tokens) {
+    if (tokens.size() < 2) {
+        return "wrong number of arguments for LPOP.";
+    }
+    return redisHelper->lpop(tokens[1]);
+}
+std::string RPopParser::parse(std::vector<std::string>& tokens) {
+    if (tokens.size() < 2) {
+        return "wrong number of arguments for LPOP.";
+    }
+    return redisHelper->rpop(tokens[1]);
+}
+std::string LRangeParser::parse(std::vector<std::string>& tokens) {
+    if (tokens.size() < 4) {
+        return "wrong number of arguments for LPOP.";
+    }
+    int start = 0;
+    int end = 0;
+    try {
+        start = std::stoi(tokens[2]);
+        end = std::stoi(tokens[3]);
+    } catch (std::invalid_argument const& e) {
+        return tokens[2]+" or "+tokens[3] + " is not a integer type";
+    }
+    return redisHelper->lrange(tokens[1],tokens[2],tokens[3]);
+}

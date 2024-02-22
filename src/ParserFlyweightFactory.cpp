@@ -94,6 +94,26 @@ std::shared_ptr<CommandParser> ParserFlyweightFactory::createCommandParser(std::
             parserMaps[command]=std::make_shared<SelectParser>();
             break;
         }
+        case LPUSH:{
+            parserMaps[command]=std::make_shared<LPushParser>();
+            break;
+        }
+        case RPUSH:{
+            parserMaps[command]=std::make_shared<RPushParser>();
+            break;
+        }
+        case LPOP:{
+            parserMaps[command]=std::make_shared<LPopParser>();
+            break;
+        }
+        case RPOP:{
+            parserMaps[command]=std::make_shared<RPopParser>();
+            break;
+        }
+        case LRANGE:{
+            parserMaps[command]=std::make_shared<LRangeParser>();
+            break;
+        }
         default:{
             return nullptr;
         }

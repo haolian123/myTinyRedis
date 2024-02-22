@@ -129,4 +129,33 @@ public:
     std::string parse(std::vector<std::string>& tokens) override;
 };
 
+// LPushParser
+class LPushParser : public CommandParser {
+public:
+    std::string parse(std::vector<std::string>& tokens) override;
+};
+
+// RPushParser
+class RPushParser : public CommandParser {
+public:
+    std::string parse(std::vector<std::string>& tokens) override;
+};
+
+// LPopParser
+class LPopParser : public CommandParser {
+public:
+    std::string parse(std::vector<std::string>& tokens) override;
+};
+
+// RPopParser
+class RPopParser : public CommandParser {
+public:
+    std::string parse(std::vector<std::string>& tokens) override;
+};
+
+//LRangeParser
+class LRangeParser : public CommandParser {
+public:
+    std::string parse(std::vector<std::string>& tokens) override;
+};
 #endif // COMMANDPARSER_H

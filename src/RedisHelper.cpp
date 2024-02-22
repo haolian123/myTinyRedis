@@ -319,3 +319,118 @@ RedisHelper::RedisHelper(){
     loadData(filePath);
 }
 RedisHelper::~RedisHelper(){flush();}
+
+
+//列表操作
+// LPUSH key value：将一个值插入到列表头部。
+// RPUSH key value：将一个值插入到列表尾部。
+// LPOP key：移出并获取列表的第一个元素。
+// RPOP key：移出并获取列表的最后一个元素。
+// LRANGE key start stop：获取列表指定范围内的元素。
+std::string RedisHelper::lpush(const std::string&key,const std::string &value){
+    auto currentNode=redisDataBase->searchItem(key);
+    std::string resMessage = "";
+    int size = 0;
+    if(currentNode==nullptr){
+        std::vector<RedisValue>data;
+        RedisValue redisList(data) ;
+        RedisValue::array& valueList = redisList.arrayItems();
+        valueList.insert(valueList.begin(),value);
+        redisDataBase->addItem(key,redisList);
+        size = 1;
+    }else{
+        if(currentNode->value.type()!=RedisValue::ARRAY){
+            resMessage="The key:" +key+" "+"already exists and the value is not a list!";
+            return resMessage;
+        }else{
+            RedisValue::array& valueList = currentNode->value.arrayItems();
+            valueList.insert(valueList.begin(),value);
+            size = valueList.size();
+        }
+    }
+
+    resMessage="(integer) "+std::to_string(size);
+    return resMessage;
+}
+std::string RedisHelper::rpush(const std::string&key,const std::string &value){
+    auto currentNode=redisDataBase->searchItem(key);
+    std::string resMessage = "";
+    int size = 0;
+    if(currentNode==nullptr){
+        std::vector<RedisValue>data;
+        RedisValue redisList(data) ;
+        RedisValue::array& valueList = redisList.arrayItems();
+        valueList.push_back(value);
+        redisDataBase->addItem(key,redisList);
+        size = 1;
+    }else{
+        if(currentNode->value.type()!=RedisValue::ARRAY){
+            resMessage="The key:" +key+" "+"already exists and the value is not a list!";
+            return resMessage;
+        }else{
+            RedisValue::array& valueList = currentNode->value.arrayItems();
+            valueList.push_back(value);
+            size = valueList.size();
+        }
+    }
+
+    resMessage="(integer) "+std::to_string(size);
+    return resMessage;
+}
+std::string RedisHelper::lpop(const std::string&key){
+    auto currentNode=redisDataBase->searchItem(key);
+    std::string resMessage = "";
+    int size = 0;
+    if(currentNode==nullptr||currentNode->value.type()!=RedisValue::ARRAY){
+        resMessage="nil";
+    }else{
+        
+        RedisValue::array& valueList = currentNode->value.arrayItems();
+        resMessage = (*valueList.begin()).dump();
+        valueList.erase(valueList.begin());
+        resMessage.erase(0,1);
+        resMessage.erase(resMessage.size()-1);
+    }
+    return resMessage;
+}
+std::string RedisHelper::rpop(const std::string&key){
+    auto currentNode=redisDataBase->searchItem(key);
+    std::string resMessage = "";
+    int size = 0;
+    if(currentNode==nullptr||currentNode->value.type()!=RedisValue::ARRAY){
+        resMessage="nil";
+    }else{
+        RedisValue::array& valueList = currentNode->value.arrayItems();
+        resMessage = (valueList.back()).dump();
+        valueList.pop_back();
+        resMessage.erase(0,1);
+        resMessage.erase(resMessage.size()-1);
+    }
+    return resMessage;
+}
+std::string RedisHelper::lrange(const std::string&key,const std::string &start,const std::string&end){
+    auto currentNode=redisDataBase->searchItem(key);
+    std::string resMessage = "";
+    int size = 0;
+    if(currentNode==nullptr||currentNode->value.type()!=RedisValue::ARRAY){
+        resMessage="nil";
+    }else{
+        
+        RedisValue::array& valueList = currentNode->value.arrayItems();
+        int left = std::stoi(start);
+        int right = std::stoi(end);
+        left = std::max(left,0);
+        right = std::min(right,int(valueList.size()-1));
+        if(right<left||left>=valueList.size()){
+            resMessage="(empty list or set)";
+        }
+        for(int i=left;i<=right;i++){
+            auto item = valueList[i];
+            resMessage+=std::to_string(i+1)+") "+item.dump();
+            if(i!=right){
+                resMessage+="\n";
+            }
+        }
+    }
+    return resMessage;
+}

@@ -223,3 +223,46 @@ std::string LRangeParser::parse(std::vector<std::string>& tokens) {
     }
     return redisHelper->lrange(tokens[1],tokens[2],tokens[3]);
 }
+
+
+// HSetParser
+std::string HSetParser::parse(std::vector<std::string>& tokens) {
+    if (tokens.size() < 4||tokens.size()%2!=0) {
+        return "wrong number of arguments for HSET.";
+    }
+    std::vector<std::string> fields(tokens.begin() + 2, tokens.end());
+    return redisHelper->hset(tokens[1], fields);
+}
+
+// HGetParser
+std::string HGetParser::parse(std::vector<std::string>& tokens) {
+    if (tokens.size() != 3) {
+        return "wrong number of arguments for HGET.";
+    }
+    return redisHelper->hget(tokens[1], tokens[2]);
+}
+
+// HDelParser
+std::string HDelParser::parse(std::vector<std::string>& tokens) {
+    if (tokens.size() < 3) {
+        return "wrong number of arguments for HDEL.";
+    }
+    std::vector<std::string> fields(tokens.begin() + 2, tokens.end());
+    return redisHelper->hdel(tokens[1], fields);
+}
+
+// HKeysParser
+std::string HKeysParser::parse(std::vector<std::string>& tokens) {
+    if (tokens.size() != 2) {
+        return "wrong number of arguments for HKEYS.";
+    }
+    return redisHelper->hkeys(tokens[1]);
+}
+
+// HValsParser
+std::string HValsParser::parse(std::vector<std::string>& tokens) {
+    if (tokens.size() != 2) {
+        return "wrong number of arguments for HVALS.";
+    }
+    return redisHelper->hvals(tokens[1]);
+}

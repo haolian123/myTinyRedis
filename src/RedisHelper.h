@@ -83,6 +83,18 @@ public:
     std::string lpop(const std::string&key);
     std::string rpop(const std::string&key);
     std::string lrange(const std::string&key,const std::string &start,const std::string&end);
+
+    //哈希表操作
+    // HSET key field value：向哈希表中添加一个字段及其值。
+    // HGET key field：获取哈希表中指定字段的值。
+    // HDEL key field：删除哈希表 key 中的一个或多个指定字段。
+    // HKEYS key：获取哈希表中的所有字段名。
+    // HVALS key：获取哈希表中的所有值。
+    std::string hset(const std::string&key,const std::vector<std::string>&filed);
+    std::string hget(const std::string&key,const std::string&filed);
+    std::string hdel(const std::string&key,const std::vector<std::string>&filed);
+    std::string hkeys(const std::string&key);
+    std::string hvals(const std::string&key);
 };
 
 #endif

@@ -382,7 +382,7 @@ std::string RedisHelper::lpop(const std::string&key){
     std::string resMessage = "";
     int size = 0;
     if(currentNode==nullptr||currentNode->value.type()!=RedisValue::ARRAY){
-        resMessage="nil";
+        resMessage="(nil)";
     }else{
         
         RedisValue::array& valueList = currentNode->value.arrayItems();
@@ -398,7 +398,7 @@ std::string RedisHelper::rpop(const std::string&key){
     std::string resMessage = "";
     int size = 0;
     if(currentNode==nullptr||currentNode->value.type()!=RedisValue::ARRAY){
-        resMessage="nil";
+        resMessage="(nil)";
     }else{
         RedisValue::array& valueList = currentNode->value.arrayItems();
         resMessage = (valueList.back()).dump();
@@ -413,7 +413,7 @@ std::string RedisHelper::lrange(const std::string&key,const std::string &start,c
     std::string resMessage = "";
     int size = 0;
     if(currentNode==nullptr||currentNode->value.type()!=RedisValue::ARRAY){
-        resMessage="nil";
+        resMessage="(nil)";
     }else{
         
         RedisValue::array& valueList = currentNode->value.arrayItems();
@@ -430,6 +430,135 @@ std::string RedisHelper::lrange(const std::string&key,const std::string &start,c
             if(i!=right){
                 resMessage+="\n";
             }
+        }
+    }
+    return resMessage;
+}
+
+// 哈希表操作
+// HSET key field value：向哈希表中添加一个字段及其值。
+// HGET key field：获取哈希表中指定字段的值。
+// HDEL key field：删除哈希表 key 中的一个或多个指定字段。
+// HKEYS key：获取哈希表中的所有字段名。
+// HVALS key：获取哈希表中的所有值。
+
+
+std::string RedisHelper::hset(const std::string&key,const std::vector<std::string>&filed){
+    auto currentNode=redisDataBase->searchItem(key);
+    std::string resMessage = "";
+    int count = 0;
+    if(currentNode==nullptr){
+        std::map<std::string,RedisValue>data;
+        RedisValue redisHash(data) ;
+        RedisValue::object& valueMap = redisHash.objectItems();
+        for(int i=0;i<filed.size();i+=2){
+            std::string hkey=filed[i];
+            RedisValue hval=filed[i+1];
+            if(!valueMap.count(hkey)){
+                valueMap[hkey] = hval;
+                count++;
+            }
+        }
+        redisDataBase->addItem(key,valueMap);
+    }else{
+        if(currentNode->value.type()!=RedisValue::OBJECT){
+            resMessage="The key:" +key+" "+"already exists and the value is not a hashtable!";
+            return resMessage;
+        }else{
+            RedisValue::object& valueMap = currentNode->value.objectItems();
+            for(int i=0;i<filed.size();i+=2){
+                std::string hkey=filed[i];
+                RedisValue hval=filed[i+1];
+                if(!valueMap.count(hkey)){
+                    valueMap[hkey] = hval;
+                    count++;
+                }
+            }
+        }
+    }
+
+    resMessage="(integer) "+std::to_string(count);
+    return resMessage;
+}
+std::string RedisHelper::hget(const std::string&key,const std::string&filed){
+    auto currentNode=redisDataBase->searchItem(key);
+    std::string resMessage = "";
+    int count = 0;
+    if(currentNode==nullptr||currentNode->value.type()!=RedisValue::OBJECT){
+        resMessage="(nil)";
+    }else{
+        RedisValue::object& valueMap = currentNode->value.objectItems();
+        if(!valueMap.count(filed)){
+            resMessage="(nil)";
+        }else{
+            resMessage = valueMap[filed].stringValue();
+        }
+        
+    }
+    return resMessage;
+}
+std::string RedisHelper::hdel(const std::string&key,const std::vector<std::string>&filed){
+    auto currentNode=redisDataBase->searchItem(key);
+    std::string resMessage = "";
+    int count = 0;
+    if(currentNode==nullptr||currentNode->value.type()!=RedisValue::OBJECT){
+        count = 0;
+    }else{
+        RedisValue::object& valueMap = currentNode->value.objectItems();
+        for(auto& hkey:filed){
+            if(valueMap.count(hkey)){
+                count++;
+                valueMap.erase(hkey);
+            }
+        }
+    }
+    resMessage="(integer) "+std::to_string(count);
+    return resMessage;
+}
+
+std::string RedisHelper::hkeys(const std::string&key){
+    auto currentNode=redisDataBase->searchItem(key);
+    std::string resMessage = "";
+    int count = 0;
+    if(currentNode==nullptr){
+        resMessage="The key:" +key+" "+"does not exist!";
+        return resMessage;
+    }else{
+        if(currentNode->value.type()!=RedisValue::OBJECT){
+            resMessage="The key:" +key+" "+"already exists and the value is not a hashtable!";
+            return resMessage;
+        }else{
+            RedisValue::object& valueMap = currentNode->value.objectItems();
+            int index = 1;
+            for(auto hkey:valueMap){
+                resMessage+=std::to_string(index)+") "+hkey.first+"\n";
+                index++;
+            }
+            resMessage.erase(resMessage.size()-1);
+        }
+    }
+    return resMessage;
+}
+
+std::string RedisHelper::hvals(const std::string&key){
+    auto currentNode=redisDataBase->searchItem(key);
+    std::string resMessage = "";
+    int count = 0;
+    if(currentNode==nullptr){
+        resMessage="The key:" +key+" "+"does not exist!";
+        return resMessage;
+    }else{
+        if(currentNode->value.type()!=RedisValue::OBJECT){
+            resMessage="The key:" +key+" "+"already exists and the value is not a hashtable!";
+            return resMessage;
+        }else{
+            RedisValue::object& valueMap = currentNode->value.objectItems();
+            int index = 1;
+            for(auto hkey:valueMap){
+                resMessage+=std::to_string(index)+") "+hkey.second.stringValue()+"\n";
+                index++;
+            }
+            resMessage.erase(resMessage.size()-1);
         }
     }
     return resMessage;

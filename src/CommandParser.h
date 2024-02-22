@@ -158,4 +158,39 @@ class LRangeParser : public CommandParser {
 public:
     std::string parse(std::vector<std::string>& tokens) override;
 };
+
+// HSetParser
+class HSetParser : public CommandParser {
+public:
+    std::string parse(std::vector<std::string>& tokens) override;
+};
+
+// HGetParser
+class HGetParser : public CommandParser {
+public:
+    std::string parse(std::vector<std::string>& tokens) override;
+};
+
+// HDelParser
+class HDelParser : public CommandParser {
+public:
+    std::string parse(std::vector<std::string>& tokens) override;
+};
+
+// HKeysParser
+class HKeysParser : public CommandParser {
+public:
+    std::string parse(std::vector<std::string>& tokens) override;
+};
+
+// HValsParser
+class HValsParser : public CommandParser {
+public:
+    std::string parse(std::vector<std::string>& tokens) override;
+};
+
+
+
+
+
 #endif // COMMANDPARSER_H

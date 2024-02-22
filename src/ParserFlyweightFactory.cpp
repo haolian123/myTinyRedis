@@ -114,6 +114,26 @@ std::shared_ptr<CommandParser> ParserFlyweightFactory::createCommandParser(std::
             parserMaps[command]=std::make_shared<LRangeParser>();
             break;
         }
+        case HSET:{
+            parserMaps[command]=std::make_shared<HSetParser>();
+            break;
+        }
+        case HGET:{
+            parserMaps[command]=std::make_shared<HGetParser>();
+            break;
+        }
+        case HDEL:{
+            parserMaps[command]=std::make_shared<HDelParser>();
+            break;
+        }
+        case HKEYS:{
+            parserMaps[command]=std::make_shared<HKeysParser>();
+            break;
+        }
+        case HVALS:{
+            parserMaps[command]=std::make_shared<HValsParser>();
+            break;
+        }
         default:{
             return nullptr;
         }

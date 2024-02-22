@@ -33,6 +33,11 @@ enum Command{
     LPOP,
     RPOP,
     LRANGE,
+    HSET,
+    HGET,
+    HDEL,
+    HKEYS,
+    HVALS,
     INVALID_COMMAND
 };
 
@@ -60,8 +65,12 @@ static std::unordered_map<std::string,enum Command>commandMaps={
     {"rpush",RPUSH},
     {"lpop",LPOP},
     {"rpop",RPOP},
-    {"lrange",LRANGE}
-    
+    {"lrange",LRANGE},
+    {"hset",HSET},
+    {"hget",HGET},
+    {"hdel",HDEL},
+    {"hkeys",HKEYS},
+    {"hvals",HVALS}
 };
 
 

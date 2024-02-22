@@ -8,30 +8,30 @@ static const int max_depth = 200;
 // Statics结构体，用于存储JSON值的一些静态实例，如null、true、false等，以及空的字符串、向量和映射。
 // 这样做是为了避免重复创建这些常用对象，提高效率。
 struct Statics{
-    const std::shared_ptr<RedisValueType> null = std::make_shared<RedisValueNull>();
+    std::shared_ptr<RedisValueType> null = std::make_shared<RedisValueNull>();
 
     // 定义一个静态的空字符串
-    const std::string emptyString;
+    std::string emptyString;
 
     // 定义一个静态的空Json数组
-    const std::vector<RedisValue> emptyVector;
+    std::vector<RedisValue> emptyVector;
 
     // 定义一个静态的空Json对象映射
-    const std::map<std::string,RedisValue> emptyMap;
+    std::map<std::string,RedisValue> emptyMap;
 
     // 默认构造函数
     Statics(){}
 };
 
 // 返回一个静态的Statics实例的引用，保证整个程序中只有一个Statics实例。
-static const Statics& statics(){
-    static const Statics s{};
+static Statics& statics(){
+    static Statics s{};
     return s;
 }
 
 // 返回一个静态的null Json实例的引用，用于表示JSON中的null值。
-static const RedisValue & staticNull(){
-    static const RedisValue redisValueNull;
+static RedisValue & staticNull(){
+    static RedisValue redisValueNull;
     return redisValueNull;
 }
 

@@ -29,52 +29,52 @@ RedisValue::Type RedisValue::type() const {
     return redisValue->type();
 }
 
-const std::string & RedisValue::stringValue() const {
+std::string & RedisValue::stringValue() {
     return redisValue->stringValue();
 }
 
-const std::vector<RedisValue> & RedisValue::arrayItems() const {
+std::vector<RedisValue> & RedisValue::arrayItems() {
     return redisValue->arrayItems();
 }
 
-const std::map<std::string, RedisValue> & RedisValue::objectItems() const {
+std::map<std::string, RedisValue> & RedisValue::objectItems()  {
     return redisValue->objectItems();
 }
 
-const RedisValue & RedisValue::operator[] (size_t i) const {
+RedisValue & RedisValue::operator[] (size_t i)  {
     return (*redisValue)[i];
 }
 
-const RedisValue & RedisValue::operator[] (const std::string& key) const {
+RedisValue & RedisValue::operator[] (const std::string& key) {
     return (*redisValue)[key];
 }
 
-const std::string& RedisValueType::stringValue() const {
+std::string& RedisValueType::stringValue() {
     return statics().emptyString;
 }
 
-const std::vector<RedisValue> & RedisValueType::arrayItems() const {
+std::vector<RedisValue> & RedisValueType::arrayItems() {
     return statics().emptyVector;
 }
 
-const std::map<std::string, RedisValue> & RedisValueType::objectItems() const {
+std::map<std::string, RedisValue> & RedisValueType::objectItems() {
     return statics().emptyMap;
 }
 
-const RedisValue& RedisValueType::operator[] (size_t) const{
+RedisValue& RedisValueType::operator[] (size_t) {
     return staticNull();
 }
 
-const RedisValue& RedisValueType::operator[] (const std::string&) const{
+RedisValue& RedisValueType::operator[] (const std::string&) {
     return staticNull();
 }
 
-const RedisValue& RedisObject::operator[] (const std::string&key) const{
+RedisValue& RedisObject::operator[] (const std::string&key) {
     auto it = value.find(key);
     return (it==value.end()) ? staticNull() : it->second;
 }
 
-const RedisValue& RedisList::operator[](size_t i ) const{
+RedisValue& RedisList::operator[](size_t i ) {
     if(i>=value.size()) return staticNull();
     return value[i];
 }
@@ -164,7 +164,7 @@ std::vector<RedisValue> RedisValue::parseMulti(
 }
 
 // 检查 JSON 对象是否具有指定的形状
-bool RedisValue::hasShape(const shape & types, std::string & err) const {
+bool RedisValue::hasShape(const shape & types, std::string & err)  {
     // 如果 JSON 不是对象类型，则返回错误
     if (!isObject()) {
         err = "expected JSON object, got " + dump();
@@ -172,7 +172,7 @@ bool RedisValue::hasShape(const shape & types, std::string & err) const {
     }
 
     // 获取 JSON 对象的所有成员项
-    const auto& obj_items = objectItems();
+    auto obj_items = objectItems();
     
     // 遍历指定的形状
     for (auto & item : types) {

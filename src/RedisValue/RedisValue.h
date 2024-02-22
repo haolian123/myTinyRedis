@@ -58,16 +58,13 @@ public:
     bool isObject() const { return type() == OBJECT; }
 
     // 获取值的函数
-    double numberValue() const;
-    int intValue() const;
-    bool boolValue() const;
-    const std::string& stringValue() const;
-    const array& arrayItems() const;
-    const object &objectItems() const;
+    std::string& stringValue() ;
+    array& arrayItems() ;
+    object &objectItems() ;
 
     // 重载 [] 操作符，用于访问数组元素和对象成员
-    const RedisValue & operator[] (size_t i) const;
-    const RedisValue & operator[] (const std::string &key) const;
+    RedisValue & operator[] (size_t i) ;
+    RedisValue & operator[] (const std::string &key) ;
 
     // 序列化函数
     void dump(std::string &out) const;
@@ -103,7 +100,7 @@ public:
     
     // 检查 RedisValue 对象是否符合指定形状
     typedef std::initializer_list<std::pair<std::string,Type>> shape;
-    bool hasShape(const shape &types,std::string &err) const;
+    bool hasShape(const shape &types,std::string &err) ;
     
 private:
     std::shared_ptr<RedisValueType> redisValue; // 指向实际存储的智能指针

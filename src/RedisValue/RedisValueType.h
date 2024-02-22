@@ -15,11 +15,11 @@ protected:
     virtual bool equals(const RedisValueType*other) const = 0;
     virtual bool less(const RedisValueType*other) const = 0;
     virtual void dump(std::string& out) const = 0;
-    virtual const std::string &stringValue() const;
-    virtual const RedisValue::array &arrayItems() const;
-    virtual const RedisValue::object &objectItems() const;
-    virtual const RedisValue& operator[] (size_t i) const;
-    virtual const RedisValue& operator[](const std::string &key) const;
+    virtual std::string &stringValue() ;
+    virtual RedisValue::array &arrayItems() ;
+    virtual RedisValue::object &objectItems() ;
+    virtual RedisValue& operator[] (size_t i) ;
+    virtual RedisValue& operator[](const std::string &key) ;
     virtual ~RedisValueType(){}
 
 };
@@ -27,11 +27,13 @@ protected:
 template<RedisValue::Type tag,typename T>
 class Value : public RedisValueType{
 protected:
-    const T value;
+    T value;
 protected:
     explicit Value(const T& value) : value(value){}
     explicit Value(T&&value) : value(std::move(value)){}
-
+    T getValue(){
+        return value;
+    }
     RedisValue::Type type() const override{
         return tag;
     }
@@ -51,23 +53,23 @@ protected:
 
 
 class RedisString final:public Value<RedisValue::STRING,std::string>{
-    const std::string & stringValue() const override { return value;}
+    std::string & stringValue()override { return value;}
 public:
     explicit RedisString(const std::string& value): Value(value){}
     explicit RedisString(std::string&& value) : Value(std::move(value)) {}
 };
 
 class RedisList final : public Value<RedisValue::ARRAY, RedisValue::array>{
-    const RedisValue::array & arrayItems() const override{ return value;}
-    const RedisValue & operator[](size_t i) const override;
+    RedisValue::array & arrayItems()  override{ return value;}
+    RedisValue & operator[](size_t i)  override;
 public:
     explicit RedisList(const RedisValue::array &value): Value(value){}
     explicit RedisList(RedisValue::array &&value) : Value(std::move(value)){}
 };
 
 class RedisObject final : public Value<RedisValue::OBJECT,RedisValue::object>{
-    const RedisValue::object & objectItems() const override{ return value;}
-    const RedisValue& operator[] (const std::string& key) const override;
+    RedisValue::object & objectItems()  override{ return value;}
+    RedisValue& operator[] (const std::string& key)  override;
 public:
     explicit RedisObject(const RedisValue::object &value) : Value(value) {} 
     explicit RedisObject(RedisValue::object &&value)      : Value(std::move(value)) {} 
